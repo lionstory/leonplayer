@@ -364,7 +364,7 @@
         </font>
        </property>
        <property name="text">
-        <string>倍速:1.0</string>
+        <string>Speed:1.0</string>
        </property>
       </widget>
      </item>

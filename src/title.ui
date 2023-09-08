@@ -123,16 +123,10 @@
    </item>
    <item row="0" column="0">
     <widget class="QPushButton" name="MenuBtn">
-     <property name="minimumSize">
-      <size>
-       <width>130</width>
-       <height>0</height>
-      </size>
-     </property>
      <property name="maximumSize">
       <size>
-       <width>200</width>
-       <height>16777215</height>
+       <width>130</width>
+       <height>30</height>
       </size>
      </property>
      <property name="font">
