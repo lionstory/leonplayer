@@ -1,6 +1,7 @@
 # Leonplayer
 An open source video player developed by Leon. It supports latest FFMPEG version 6.0.0 and SDL version 2.28.3. Developed with Qt v6.4.3 & QtCreator v11 IDE.
 
+![screenshot](https://github.com/lionstory/screen.png)
 [lionstory/leonplayer: An open source video player.](https://github.com/lionstory/leonplayer)
 
 
