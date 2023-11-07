@@ -156,10 +156,10 @@ void Title::OnChangeMaxBtnStyle(bool bIfMax)
 
 void Title::OnPlay(QString strMovieName)
 {
-    qDebug() << "Title::OnPlay";
     QFileInfo fileInfo(strMovieName);
     m_strMovieName = fileInfo.fileName();
     ui->MovieNameLab->setText(m_strMovieName);
+    qDebug() << "Title::OnPlay" << "filename" << m_strMovieName;
     //ChangeMovieNameShow();
 }
 

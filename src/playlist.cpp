@@ -169,12 +169,16 @@ void Playlist::OnAddFileAndPlay(QString strFileName)
         strFileName.endsWith(".3gp", Qt::CaseInsensitive);
     if (!bSupportMovie)
     {
+        qDebug() << "no support movie" << bSupportMovie;
         return;
     }
 
     QFileInfo fileInfo(strFileName);
     QList<QListWidgetItem *> listItem = ui->List->findItems(fileInfo.fileName(), Qt::MatchExactly);
     QListWidgetItem *pItem = nullptr;
+
+    qDebug() << "file: " << fileInfo.fileName();
+
     if (listItem.isEmpty())
     {
         pItem = new QListWidgetItem(ui->List);
@@ -187,6 +191,8 @@ void Playlist::OnAddFileAndPlay(QString strFileName)
     {
         pItem = listItem.at(0);
     }
+
+    qDebug() << "Going to play: " << pItem;
     on_List_itemDoubleClicked(pItem);
 }
 

@@ -130,15 +130,19 @@ void CtrlBar::OnVideopVolume(double dPercent)
 void CtrlBar::OnPauseStat(bool bPaused)
 {
     qDebug() << "CtrlBar::OnPauseStat" << bPaused;
+    LOGSTR(bPaused);
     if (bPaused)
     {
         GlobalHelper::SetIcon(ui->PlayOrPauseBtn, 12, QChar(0xf04b));
         ui->PlayOrPauseBtn->setToolTip("播放");
+        qDebug() << "Paused" ;
     }
     else
     {
         GlobalHelper::SetIcon(ui->PlayOrPauseBtn, 12, QChar(0xf04c));
         ui->PlayOrPauseBtn->setToolTip("暂停");
+        qDebug() << "Not Paused" ;
+        LOGSTR("Not Paused");
     }
 }
 

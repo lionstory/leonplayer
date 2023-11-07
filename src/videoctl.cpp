@@ -129,6 +129,7 @@ void VideoCtl::video_image_display(VideoState *is)
     Frame *sp = NULL;
     SDL_Rect rect;
 
+    MYLOG();
     vp = frame_queue_peek_last(&is->pictq);
     if (is->subtitle_st) {
         if (frame_queue_nb_remaining(&is->subpq) > 0) {
@@ -263,6 +264,7 @@ void VideoCtl::stream_component_close(VideoState *is, int stream_index)
 //关闭流
 void VideoCtl::stream_close(VideoState *is)
 {
+    MYLOG();
     /* XXX: use a special url_shutdown call to abort parse cleanly */
     is->abort_request = 1;
     is->read_tid.join();
@@ -410,10 +412,13 @@ double VideoCtl::get_master_clock(VideoState *is)
         val = get_clock(&is->extclk);
         break;
     }
+
+    LOGSTR(val);
     return val;
 }
 
 void VideoCtl::check_external_clock_speed(VideoState *is) {
+    LOGSTR(is);
     if (is->video_stream >= 0 && is->videoq.nb_packets <= EXTERNAL_CLOCK_MIN_FRAMES ||
             is->audio_stream >= 0 && is->audioq.nb_packets <= EXTERNAL_CLOCK_MIN_FRAMES) {
         set_clock_speed(&is->extclk, FFMAX(EXTERNAL_CLOCK_SPEED_MIN, is->extclk.speed - EXTERNAL_CLOCK_SPEED_STEP));
@@ -584,11 +589,15 @@ void VideoCtl::video_refresh(void *opaque, double *remaining_time)
 
     double rdftspeed = 0.02;
 
+    LOGSTR(is);
     if (!is->paused && get_master_sync_type(is) == AV_SYNC_EXTERNAL_CLOCK && is->realtime)
         check_external_clock_speed(is);
 
+    LOGSTR(is->video_st);
     if (is->video_st) {
+        MYLOG();
 retry:
+        LOGSTR("retry");
         if (frame_queue_nb_remaining(&is->pictq) == 0) {
             // nothing to do, no picture to display in the queue
         }
@@ -613,12 +622,12 @@ retry:
 
             /* compute nominal last_duration */
             last_duration = vp_duration(is, lastvp, vp);
-//            qDebug() << "last_duration ......" << last_duration;
+            qDebug() << "last_duration ......" << last_duration;
             delay = compute_target_delay(last_duration, is);
-//            qDebug() << "delay ......" << delay;
+            qDebug() << "delay ......" << delay;
             time = av_gettime_relative() / 1000000.0;
             if (time < is->frame_timer + delay) {
-//                 qDebug() << "(is->frame_timer + delay) - time " << is->frame_timer + delay - time;
+                 qDebug() << "(is->frame_timer + delay) - time " << is->frame_timer + delay - time;
                 *remaining_time = FFMIN(is->frame_timer + delay - time, *remaining_time);
                 goto display;
             }
@@ -631,7 +640,7 @@ retry:
             if (!std::isnan(vp->pts))
                 update_video_pts(is, vp->pts, vp->pos, vp->serial);
             SDL_UnlockMutex(is->pictq.mutex);
-//            qDebug() << "debug " << __LINE__;
+            qDebug() << "debug " << __LINE__;
             if (frame_queue_nb_remaining(&is->pictq) > 1) {
                 Frame *nextvp = frame_queue_peek_next(&is->pictq);
                 duration = vp_duration(is, vp, nextvp);
@@ -642,7 +651,7 @@ retry:
                     goto retry;
                 }
             }
-//            qDebug() << "debug " << __LINE__;
+            qDebug() << "debug " << __LINE__;
             if (is->subtitle_st) {
                 while (frame_queue_nb_remaining(&is->subpq) > 0) {
                     sp = frame_queue_peek(&is->subpq);
@@ -685,19 +694,21 @@ retry:
                 stream_toggle_pause(is);
         }
 display:
+        LOGSTR("display");
         /* display picture */
         if (is->force_refresh && is->pictq.rindex_shown)
             video_display(is);
     }
     is->force_refresh = 0;
 
-    emit SigVideoPlaySeconds(get_master_clock(is)*pf_playback_rate);
+    emit SigVideoPlaySeconds( get_master_clock(is) * pf_playback_rate);
 }
 
 int VideoCtl::queue_picture(VideoState *is, AVFrame *src_frame, double pts, double duration, int64_t pos, int serial)
 {
     Frame *vp;
 
+    MYLOG();
     if (!(vp = frame_queue_peek_writable(&is->pictq)))
         return -1;
 
@@ -723,6 +734,7 @@ int VideoCtl::get_video_frame(VideoState *is, AVFrame *frame)
 {
     int got_picture;
 
+    MYLOG();
     //获取解码后的视频帧
     if ((got_picture = decoder_decode_frame(&is->viddec, frame, NULL)) < 0)
         return -1;
@@ -765,6 +777,7 @@ int VideoCtl::audio_thread(void *arg)
     AVRational tb;
     int ret = 0;
 
+    MYLOG();
     if (!frame)
         return AVERROR(ENOMEM);
 
@@ -806,6 +819,7 @@ int VideoCtl::video_thread(void *arg)
     AVRational tb = is->video_st->time_base;
     AVRational frame_rate = av_guess_frame_rate(is->ic, is->video_st, NULL);
 
+    MYLOG();
     if (!frame)
     {
         return AVERROR(ENOMEM);
@@ -841,6 +855,7 @@ int VideoCtl::subtitle_thread(void *arg)
     int got_subtitle;
     double pts;
 
+    MYLOG();
     for (;;) {
         if (!(sp = frame_queue_peek_writable(&is->subpq)))
             return 0;
@@ -948,6 +963,7 @@ int VideoCtl::audio_decode_frame(VideoState *is)
     int wanted_nb_samples;
     Frame *af;
 
+    MYLOG();
     if (is->paused)
         return -1;
 
@@ -1181,6 +1197,7 @@ void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
 int VideoCtl::audio_open(void *opaque, int64_t wanted_channel_layout, int wanted_nb_channels, int wanted_sample_rate,
                          struct AudioParams *audio_hw_params)
 {
+    MYLOG();
     SDL_AudioSpec wanted_spec, spec;
     const char *env;
     static const int next_nb_channels[] = { 0, 0, 1, 6, 2, 6, 4, 6 };
@@ -1275,6 +1292,7 @@ int VideoCtl::audio_open(void *opaque, int64_t wanted_channel_layout, int wanted
 //打开流
 int VideoCtl::stream_component_open(VideoState *is, int stream_index)
 {
+    MYLOG();
     AVFormatContext *ic = is->ic;
     AVCodecContext *avctx;
     const AVCodec *codec;
@@ -1443,6 +1461,7 @@ int VideoCtl::is_realtime(AVFormatContext *s)
 //读取线程
 void VideoCtl::ReadThread(VideoState *is)
 {
+    MYLOG();
     //VideoState *is = (VideoState *)arg;
     AVFormatContext *ic = NULL;
     int err, i, ret;
@@ -1734,6 +1753,7 @@ fail:
 
 VideoState* VideoCtl::stream_open(const char *filename)
 {
+    MYLOG();
     VideoState *is;
     //构造视频状态类
     is = (VideoState *)av_mallocz(sizeof(VideoState));
@@ -1800,6 +1820,7 @@ fail:
 
 void VideoCtl::stream_cycle_channel(VideoState *is, int codec_type)
 {
+    MYLOG();
     AVFormatContext *ic = is->ic;
     int start_index, stream_index;
     int old_index;
@@ -1882,14 +1903,22 @@ the_end:
 void VideoCtl::refresh_loop_wait_event(VideoState *is, SDL_Event *event) {
     double remaining_time = 0.0;
     SDL_PumpEvents();
+    qDebug() << "in refresh_loop_wait_event， m_bPlayLoop= " << m_bPlayLoop;
+    LOGSTR(is);
     while (!SDL_PeepEvents(event, 1, SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT) && m_bPlayLoop)
     {
         if (remaining_time > 0.0)
             av_usleep((int64_t)(remaining_time * 1000000.0));
         remaining_time = REFRESH_RATE;
-        if (!is->paused || is->force_refresh)
+        if (is == NULL){
+            LOGSTR( "error: parameter is is null." );
+        }
+        if (!is->paused || is->force_refresh){
+            MYLOG();
             video_refresh(is, &remaining_time);
+        }
         SDL_PumpEvents();
+        MYLOG();
     }
 }
 
@@ -1927,6 +1956,7 @@ void VideoCtl::LoopThread(VideoState *cur_stream)
     double incr, pos, frac;
 
     m_bPlayLoop = true;
+    LOGSTR(cur_stream);
 
     while (m_bPlayLoop)
     {
@@ -1934,6 +1964,8 @@ void VideoCtl::LoopThread(VideoState *cur_stream)
         refresh_loop_wait_event(cur_stream, &event);
         switch (event.type) {
         case SDL_KEYDOWN:
+            MYLOG();
+            qDebug() << "in VideoCtl::LoopThread, SDL_KEYDOWN";
             switch (event.key.keysym.sym) {
             case SDLK_s: // S: Step to next frame
                 step_to_next_frame(cur_stream);
@@ -1958,6 +1990,8 @@ void VideoCtl::LoopThread(VideoState *cur_stream)
             }
             break;
         case SDL_WINDOWEVENT:
+            qDebug() << "in VideoCtl::LoopThread, SDL_WINDOWEVENT";
+            MYLOG();
             //窗口大小改变事件
             switch (event.window.event) {
             case SDL_WINDOWEVENT_RESIZED:
@@ -1969,12 +2003,16 @@ void VideoCtl::LoopThread(VideoState *cur_stream)
             break;
         case SDL_QUIT:
         case FF_QUIT_EVENT:
+            qDebug() << "in VideoCtl::LoopThread, FF_QUIT_EVENT";
+            LOGSTR("FF_QUIT_EVENT");
             do_exit(cur_stream);
             break;
         default:
             break;
         }
     }
+    LOGSTR("finished loop");
+    qDebug() << "in VideoCtl::LoopThread,  finished loop.";
 
 
     do_exit(m_CurStream);
@@ -2053,6 +2091,7 @@ void VideoCtl::UpdateVolume(int sign, double step)
 /* display the current picture, if any */
 void VideoCtl::video_display(VideoState *is)
 {
+    MYLOG();
     if (!window)
         video_open(is);
     if (renderer)
@@ -2078,6 +2117,7 @@ int VideoCtl::video_open(VideoState *is)
     w = screen_width;
     h = screen_height;
 
+    MYLOG();
     if (!window) {
         int flags = SDL_WINDOW_SHOWN;
         flags |= SDL_WINDOW_RESIZABLE;
@@ -2187,11 +2227,13 @@ VideoCtl::VideoCtl(QObject *parent) :
 {
     avdevice_register_all();
     //网络格式初始化
+    MYLOG();
     avformat_network_init();
 }
 
 bool VideoCtl::Init()
 {
+    MYLOG();
     if (m_bInited == true)
     {
         return true;
@@ -2246,6 +2288,7 @@ VideoCtl::~VideoCtl()
 bool VideoCtl::StartPlay(QString strFileName, WId widPlayWid)
 {
     m_bPlayLoop = false;
+    MYLOG();
     if (m_tPlayLoopThread.joinable())
     {
         m_tPlayLoopThread.join();
@@ -2260,15 +2303,20 @@ bool VideoCtl::StartPlay(QString strFileName, WId widPlayWid)
     memset(file_name, 0, 1024);
     sprintf(file_name, "%s", /*strFileName.toLocal8Bit().data()*/strFileName.toStdString().c_str());
     //打开流
+    MYLOG();
     is = stream_open(file_name);
     if (!is) {
         av_log(NULL, AV_LOG_FATAL, "Failed to initialize VideoState!\n");
         do_exit(m_CurStream);
     }
+    qDebug()<< "stream_open success: " << file_name;
+    qDebug()<< is;
 
     m_CurStream = is;
 
     //事件循环
+    qDebug()<< "start thread ..." ;
+    MYLOG();
     m_tPlayLoopThread = std::thread(&VideoCtl::LoopThread, this, is);
 
 

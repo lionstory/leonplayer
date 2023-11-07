@@ -13,6 +13,17 @@
 
 #pragma execution_character_set("utf-8")
 
+#define MYLOG() \
+    do { \
+        if (true) qDebug() <<"File:"<< __FILE__ <<"    :"<< __LINE__  \
+<< " Func: "<< __func__;} while(0)
+
+#define LOGSTR(str) \
+do { \
+        if (true) qDebug() <<"File:"<< __FILE__ <<"    :"<< __LINE__  \
+<< " Func: "<< __func__ << " " << str;} while(0)
+
+
 enum ERROR_CODE
 {
     NoError = 0,
